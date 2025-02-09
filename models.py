@@ -8,12 +8,16 @@ class LineType(Enum):
     REMOVED = "removed"
     CONTEXT = "context"
 
-@dataclass
+@dataclass(frozen=True)  # Make the class immutable and hashable
 class Line:
     """Represents a line in the code with its metadata."""
     content: str
     number: int
     type: LineType
+    
+    def __hash__(self):
+        """Make Line hashable for use in sets."""
+        return hash((self.content, self.number, self.type))
     
     @classmethod
     def from_diff_line(cls, content: str, number: int) -> 'Line':
