@@ -1,0 +1,4 @@
+struct MyFile {
+
+  print("test)
+} 
