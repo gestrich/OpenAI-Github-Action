@@ -98,9 +98,21 @@ Code diff to analyze:
                 if isinstance(improvements, CodeImprovement):
                     improvements = [improvements]
                 
-                # Set the file path for each improvement
+                # Set the file path and extract context for each improvement
                 for improvement in improvements:
                     improvement.file_path = file.new_file
+                    
+                    # Extract context from the diff content
+                    lines = file.content.split('\n')
+                    line_num = improvement.line_number
+                    
+                    # Get 3 lines before and after the target line
+                    start = max(0, line_num - 3)
+                    end = min(len(lines), line_num + 3)
+                    
+                    # Extract the context lines
+                    context_lines = lines[start:end]
+                    improvement.context = '\n'.join(context_lines)
                 
                 all_improvements.extend(improvements)
             
