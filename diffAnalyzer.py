@@ -200,8 +200,7 @@ def main():
             print(f"\n### Suggestion {i}")
             print(f"**File:** {improvement.file_path}")
             print(f"**Line:** {improvement.line_number}")
-            print("\n**Issue:**")
-            print(improvement.description)
+            print(f"\n**Issue:** {improvement.description}")
             print(f"**Suggested Improvement:** {improvement.improvement}")
             print("---")
             
