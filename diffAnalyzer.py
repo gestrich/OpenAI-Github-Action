@@ -96,11 +96,13 @@ Lines to analyze:
         """Analyze the entire diff for improvements."""
         try:
             all_improvements = []
+            
+            # Analyze each file separately
             for file in diff.files:
                 # Convert lines to dict for API consumption
                 lines_dict = [line.to_dict() for line in file.lines]
                 
-                # Get improvements from OpenAI
+                # Get improvements from OpenAI for this file
                 improvements = self.structured_llm.invoke(
                     self.analysis_prompt.format(lines=json.dumps(lines_dict, indent=2))
                 )
@@ -126,13 +128,41 @@ Lines to analyze:
                         end = min(len(file.lines), line_index + 10)
                         
                         # Extract the context lines
-                        context_lines = [line for line in file.lines[start:end]]
+                        context_lines = file.lines[start:end]
                         improvement.context_lines = context_lines
                     else:
                         print(f"Warning: Could not find line {improvement.line_number}")
                         improvement.context_lines = []
                 
                 all_improvements.extend(improvements)
+            
+            # Print the complete summary at the end
+            if all_improvements:
+                print("\n# Code Improvement Suggestions:")
+                print("=" * 80)
+                
+                for i, improvement in enumerate(all_improvements, 1):
+                    if args.annotate_pr:
+                        # Output GitHub-style annotations
+                        print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.description}\n{improvement.improvement}")
+                    
+                    # Write to stdout for GitHub summary
+                    print(f"\n### Suggestion {i}")
+                    print(f"**File:** {improvement.file_path}")
+                    print(f"**Line:** {improvement.line_number}")
+                    
+                    # Show the relevant code context
+                    if improvement.context_lines:
+                        print("\n**Relevant Code:**")
+                        print("```")
+                        print(Line.format_lines(improvement.context_lines))
+                        print("```")
+                    
+                    print("\n**Issue:**")
+                    print(improvement.description)
+                    print("\n**Suggested Improvement:**")
+                    print(f"```\n{improvement.improvement}\n```")
+                    print("---")
             
             return all_improvements
             
