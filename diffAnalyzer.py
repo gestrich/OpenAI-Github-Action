@@ -168,10 +168,10 @@ Lines to analyze:
                     # Write to stdout for GitHub summary
                     print(f"### Suggestion {i}")
                     print(f"**File:** {improvement.file_path}")
-                    print(f"**Line:** {improvement.line_number}")
+                    print(f"**Line:** {improvement.line_number}\n")
                     print("**Issue:**")
-                    print(improvement.description)
-                    print("**Suggested Improvement:**")
+                    print(f"{improvement.description}\n")
+                    print(f"**Suggested Improvement:**")
                     print(f"{improvement.improvement}\n")
 
                     # Show the relevant code context
