@@ -1,25 +1,30 @@
 name: Run Script
 
 on:
+  pull_request:
+    branches:
+      - main  # or whatever your default branch is
   push:
     branches:
-      - test  # or master, depending on your default branch name
-      
-      
+      - test
+
 jobs:
   run-script:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+      pull-requests: write
+      
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Fetch all history for all branches and tags
+        fetch-depth: 0
         
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.x'  # Specify your Python version
+        python-version: '3.x'
         
     - name: Install dependencies
       run: |
@@ -31,7 +36,11 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        python diffAnalyzer.py >> $GITHUB_STEP_SUMMARY
+        if [ "${{ github.event_name }}" = "pull_request" ]; then
+          python diffAnalyzer.py ${{ github.event.pull_request.head.sha }} >> $GITHUB_STEP_SUMMARY
+        else
+          python diffAnalyzer.py HEAD >> $GITHUB_STEP_SUMMARY
+        fi
         
     - name: Process feedback
       if: always()
