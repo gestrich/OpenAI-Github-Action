@@ -198,12 +198,20 @@ def main():
             
             # Write to stdout for GitHub summary
             print(f"\n### Suggestion {i}")
-            print(f"\n**File:** {improvement.file_path}\n")
-            print(f"**Line:** {improvement.line_number}\n")
-            print(f"**Issue:**\n")
-            print(f"{improvement.description}\n")
-            print(f"**Suggested Improvement:**\n")
-            print(f"{improvement.improvement}\n")
+            print(f"**File:** {improvement.file_path}")
+            print(f"**Line:** {improvement.line_number}")
+            
+            # Show the relevant code context
+            if improvement.context:
+                print("\n**Relevant Code:**")
+                print("```")
+                print(improvement.context)
+                print("```")
+            
+            print("\n**Issue:**")
+            print(improvement.description)
+            print("\n**Suggested Improvement:**")
+            print(f"```\n{improvement.improvement}\n```")
             print("---")
             
             if i < len(improvements):
