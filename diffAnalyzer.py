@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import subprocess
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from langchain_openai import ChatOpenAI
@@ -8,11 +7,7 @@ import sys
 import json
 import os
 import argparse
-
-@dataclass
-class GitDiff:
-    """Represents a complete git diff."""
-    content: str
+from git_diff import GitDiff, get_git_diff
 
 class CodeImprovement(BaseModel):
     """Model for code improvement suggestions."""
@@ -88,44 +83,28 @@ Code diff to analyze:
 
     def get_git_diff(self, commit_id: Optional[str] = None) -> Optional[GitDiff]:
         """Get the git diff for analysis."""
-        try:
-            if commit_id:
-                # Get diff between commit and its parent
-                diff_output = subprocess.check_output(
-                    ["git", "diff", "-U50", f"{commit_id}^", commit_id],
-                    text=True,
-                    stderr=subprocess.PIPE
-                )
-            else:
-                # Get diff of staged changes
-                diff_output = subprocess.check_output(
-                    ["git", "diff", "--cached", "-U50"],
-                    text=True,
-                    stderr=subprocess.PIPE
-                )
-            
-            return GitDiff(content=diff_output) if diff_output else None
-            
-        except subprocess.CalledProcessError as e:
-            print(f"Error getting git diff: {e}")
-            if e.stderr:
-                print(f"Git error: {e.stderr.decode()}")
-            return None
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            return None
+        return get_git_diff(commit_id)
 
     def analyze_diff(self, diff: GitDiff) -> List[CodeImprovement]:
         """Analyze the entire diff for improvements."""
         try:
-            improvements = self.structured_llm.invoke(
-                self.analysis_prompt.format(diff=diff.content)
-            )
+            all_improvements = []
+            for file in diff.files:
+                improvements = self.structured_llm.invoke(
+                    self.analysis_prompt.format(diff=file.content)
+                )
+                
+                # Handle single or multiple improvements
+                if isinstance(improvements, CodeImprovement):
+                    improvements = [improvements]
+                
+                # Set the file path for each improvement
+                for improvement in improvements:
+                    improvement.file_path = file.new_file
+                
+                all_improvements.extend(improvements)
             
-            # Handle single or multiple improvements
-            if isinstance(improvements, CodeImprovement):
-                return [improvements]
-            return improvements
+            return all_improvements
             
         except Exception as e:
             print(f"Error during analysis: {e}")

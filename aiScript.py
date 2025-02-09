@@ -26,6 +26,7 @@ from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.pydantic_v1 import BaseModel, Field
+from git_diff import GitDiff, GitFile, get_git_diff
 
 class AIProvider(ABC):
     """Abstract base class for AI providers."""
@@ -73,72 +74,6 @@ class OpenAIProvider(AIProvider):
         except Exception as e:
             print(f"Error with OpenAI API: {e}")
             return "Failed to generate response"
-
-class LineType(Enum):
-    """Enum for different types of lines in a diff."""
-    CONTEXT = "context"
-    ADDED = "added"
-    REMOVED = "removed"
-
-@dataclass
-class DiffLine:
-    """Represents a single line in a diff."""
-    content: str
-    line_type: LineType
-    
-    @classmethod
-    def from_diff_line(cls, line: str) -> 'DiffLine':
-        """Create a DiffLine from a raw git diff line."""
-        if line.startswith('+'):
-            return cls(content=line[1:], line_type=LineType.ADDED)
-        elif line.startswith('-'):
-            return cls(content=line[1:], line_type=LineType.REMOVED)
-        else:
-            return cls(content=line, line_type=LineType.CONTEXT)
-
-@dataclass
-class DiffHunk:
-    """Represents a hunk of changes in a diff."""
-    lines: List[DiffLine]
-    old_start: int
-    old_count: int
-    new_start: int
-    new_count: int
-    
-    @classmethod
-    def from_hunk_header(cls, header: str, lines: List[str]) -> 'DiffHunk':
-        """Create a DiffHunk from a hunk header and lines."""
-        # Parse @@ -l,s +l,s @@ format
-        header_parts = header.split(' ')
-        old_range = header_parts[1][1:].split(',')
-        new_range = header_parts[2][1:].split(',')
-        
-        return cls(
-            lines=[DiffLine.from_diff_line(line) for line in lines],
-            old_start=int(old_range[0]),
-            old_count=int(old_range[1]) if len(old_range) > 1 else 1,
-            new_start=int(new_range[0]),
-            new_count=int(new_range[1]) if len(new_range) > 1 else 1
-        )
-
-@dataclass
-class DiffFile:
-    """Represents a file in a git diff."""
-    old_file: str
-    new_file: str
-    content: str
-    has_changes: bool = True
-
-@dataclass
-class GitFile:
-    """Represents a file in a git diff."""
-    new_file: str
-    content: str
-
-@dataclass
-class GitDiff:
-    """Represents a git diff."""
-    files: List[GitFile]
 
 class ReasoningStepType(Enum):
     """Types of reasoning steps in the analysis chain."""
