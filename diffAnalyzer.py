@@ -169,14 +169,14 @@ Lines to analyze:
                     print(f"### Suggestion {i}")
                     print(f"**File:** {improvement.file_path}")
                     print(f"**Line:** {improvement.line_number}")
-                    print("\n**Issue:**\n")
+                    print("**Issue:**\n")
                     print(improvement.description)
-                    print("\n**Suggested Improvement:**")
-                    print(f"\n{improvement.improvement}\n")
+                    print("**Suggested Improvement:**\n")
+                    print(f"{improvement.improvement}\n")
 
                     # Show the relevant code context
                     if improvement.context_lines:
-                        print("\n**Relevant Code:**")
+                        print("**Relevant Code:**\n")
                         print("```")
                         print(Line.format_lines(improvement.context_lines))
                         print("```")
