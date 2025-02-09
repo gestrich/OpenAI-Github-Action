@@ -169,9 +169,9 @@ Lines to analyze:
                     print(f"### Suggestion {i}")
                     print(f"**File:** {improvement.file_path}")
                     print(f"**Line:** {improvement.line_number}")
-                    print("**Issue:**\n")
+                    print("**Issue:**")
                     print(improvement.description)
-                    print("**Suggested Improvement:**\n")
+                    print("**Suggested Improvement:**")
                     print(f"{improvement.improvement}\n")
 
                     # Show the relevant code context
