@@ -32,7 +32,7 @@ def get_git_diff(commit_id: Optional[str] = None) -> Optional[GitDiff]:
         else:
             # Get diff of staged changes
             diff_output = subprocess.check_output(
-                ["git", "diff", "--cached", "-U50"],
+                ["git", "diff", "HEAD", "-U50"],
                 text=True,
                 stderr=subprocess.PIPE
             )
