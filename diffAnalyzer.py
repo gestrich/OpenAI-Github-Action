@@ -188,7 +188,7 @@ def main():
         improvements = analyzer.analyze_diff(diff)
         
         # Display results
-        print("\nCode Improvement Suggestions:")
+        print("\n# Code Improvement Suggestions:")
         print("=" * 80)
         
         for i, improvement in enumerate(improvements, 1):
@@ -203,7 +203,7 @@ def main():
             print("\n**Issue:**")
             print(improvement.description)
             print("\n**Suggested Improvement:**")
-            print(improvement.improvement)
+            print(f"`{improvement.improvement}`")
             print("---")
             
             if i < len(improvements):
