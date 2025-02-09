@@ -8,6 +8,8 @@ import json
 import os
 import argparse
 from git_diff import GitDiff, get_git_diff
+from enum import Enum
+from models import Line, LineType
 
 class CodeImprovement(BaseModel):
     """Model for code improvement suggestions."""
@@ -15,7 +17,7 @@ class CodeImprovement(BaseModel):
     line_number: int = Field(description="The line number where the issue occurs")
     description: str = Field(description="Clear description of the issue found")
     improvement: str = Field(description="Specific suggestion on how to improve the code")
-    context: str = Field(default="", description="The surrounding code context")
+    context_lines: List[Line] = Field(default_factory=list, description="The surrounding code context as Line objects")
 
 def general_code_analysis_tips() -> str:
     """Return general tips and context for code analysis."""
@@ -57,28 +59,33 @@ class DiffAnalyzer:
         self.analysis_prompt = f"""
 {general_code_analysis_tips()}
 
-Below is a git diff with context, where each line is marked as:
-- Lines starting with '+': Added or modified code
-- Lines starting with '-': Removed code
-- Other lines: Unchanged context
+Below is a structured representation of code changes. Each line has:
+- content: The actual code
+- line_number: The line number in the file
+- type: One of "added", "removed", or "context"
 
-IMPORTANT: Only analyze the added/modified lines (starting with '+').
-Use the context only to understand the changes better.
+Your task is to ANALYZE the ADDED lines (type: "added") for potential issues.
+Do NOT describe the changes themselves - instead look for:
 
-Focus on these aspects of the changed code:
-1. Code quality issues
-2. Potential bugs
-3. Performance improvements
-4. Best practices
+1. Code quality issues in the new code
+2. Potential bugs or edge cases
+3. Performance concerns
+4. Security vulnerabilities
+5. Best practice violations
+6. Maintainability issues
 
-For each suggestion:
-1. Include the file path from the diff
-2. Reference specific line numbers from the diff
-3. Provide clear improvement suggestions
-4. Consider the language-specific context
+For each issue found:
+1. Identify the specific line number where the issue occurs
+2. Clearly describe what the potential problem is
+3. Provide a specific, actionable suggestion for improvement
+4. Consider the language-specific context provided above
 
-Code diff to analyze:
-{{diff}}
+Example good response:
+- Issue: "The new code doesn't handle null input values, which could cause a crash"
+- NOT: "The code was changed to handle line numbers differently"
+
+Lines to analyze:
+{{lines}}
 """
 
     def get_git_diff(self, commit_id: Optional[str] = None) -> Optional[GitDiff]:
@@ -90,8 +97,12 @@ Code diff to analyze:
         try:
             all_improvements = []
             for file in diff.files:
+                # Convert lines to dict for API consumption
+                lines_dict = [line.to_dict() for line in file.lines]
+                
+                # Get improvements from OpenAI
                 improvements = self.structured_llm.invoke(
-                    self.analysis_prompt.format(diff=file.content)
+                    self.analysis_prompt.format(lines=json.dumps(lines_dict, indent=2))
                 )
                 
                 # Handle single or multiple improvements
@@ -102,30 +113,24 @@ Code diff to analyze:
                 for improvement in improvements:
                     improvement.file_path = file.new_file
                     
-                    # Extract context from the diff content
-                    lines = file.content.split('\n')
+                    # Find the line in our structured format
+                    target_line = next(
+                        (line for line in file.lines if line.number == improvement.line_number),
+                        None
+                    )
                     
-                    # Find the actual line in the diff that corresponds to the reported line
-                    line_count = 0
-                    target_line = None
-                    for i, line in enumerate(lines):
-                        if line.startswith('+') or line.startswith('-') or not line.startswith('@'):
-                            line_count += 1
-                        if line_count == improvement.line_number:
-                            target_line = i
-                            break
-                    
-                    if target_line is not None:
-                        # Get 10 lines before and after the target line
-                        start = max(0, target_line - 10)
-                        end = min(len(lines), target_line + 10)
+                    if target_line:
+                        # Get surrounding context
+                        line_index = file.lines.index(target_line)
+                        start = max(0, line_index - 10)
+                        end = min(len(file.lines), line_index + 10)
                         
                         # Extract the context lines
-                        context_lines = lines[start:end]
-                        improvement.context = '\n'.join(context_lines)
+                        context_lines = [line for line in file.lines[start:end]]
+                        improvement.context_lines = context_lines
                     else:
-                        print(f"Warning: Could not find line {improvement.line_number} in the diff")
-                        improvement.context = "Context not available"
+                        print(f"Warning: Could not find line {improvement.line_number}")
+                        improvement.context_lines = []
                 
                 all_improvements.extend(improvements)
             
@@ -139,7 +144,7 @@ Code diff to analyze:
                 line_number=0,
                 description=f"Failed to analyze improvements: {str(e)}",
                 improvement="",
-                context=""
+                context_lines=[]
             )]
 
 class ConfigurationManager:
@@ -227,10 +232,10 @@ def main():
             print(f"**Line:** {improvement.line_number}")
             
             # Show the relevant code context
-            if improvement.context:
+            if improvement.context_lines:
                 print("\n**Relevant Code:**")
                 print("```")
-                print(improvement.context)
+                print(Line.format_lines(improvement.context_lines))
                 print("```")
             
             print("\n**Issue:**")
