@@ -173,12 +173,6 @@ class ConfigurationManager:
 def main():
     """Entry point for the script."""
     try:
-        # Parse command line arguments
-        parser = argparse.ArgumentParser(description='Analyze git diffs for code improvements')
-        parser.add_argument('commit_id', nargs='?', default='HEAD', help='Commit ID to analyze')
-        parser.add_argument('--annotate-pr', action='store_true', help='Output GitHub-style PR annotations')
-        args = parser.parse_args()
-
         # Get OpenAI API key from environment or config
         api_key = os.getenv("OPENAI_API_KEY")
         model_name = "gpt-4"
@@ -200,10 +194,13 @@ def main():
             model_name=model_name
         )
         
+        # Get commit ID from command line or use default
+        commit_id = sys.argv[1] if len(sys.argv) > 1 else "HEAD"
+        
         # Get the diff
-        diff = analyzer.get_git_diff(args.commit_id)
+        diff = analyzer.get_git_diff(commit_id)
         if not diff:
-            print(f"No changes found in commit: {args.commit_id}")
+            print(f"No changes found in commit: {commit_id}")
             return
         
         # Analyze the diff
@@ -218,18 +215,18 @@ def main():
                 # Output GitHub-style annotations
                 print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.description}\n{improvement.improvement}")
             
-            # Always write to summary
-            print(f"\n### Suggestion {i}:", file=sys.stderr)
-            print(f"**File:** {improvement.file_path}", file=sys.stderr)
-            print(f"**Line:** {improvement.line_number}", file=sys.stderr)
-            print("\n**Issue:**", file=sys.stderr)
-            print(improvement.description, file=sys.stderr)
-            print("\n**Suggested Improvement:**", file=sys.stderr)
-            print(improvement.improvement, file=sys.stderr)
-            print("---", file=sys.stderr)
+            # Write to stdout for GitHub summary
+            print(f"\n### Suggestion {i}")
+            print(f"**File:** {improvement.file_path}")
+            print(f"**Line:** {improvement.line_number}")
+            print("\n**Issue:**")
+            print(improvement.description)
+            print("\n**Suggested Improvement:**")
+            print(improvement.improvement)
+            print("---")
             
             if i < len(improvements):
-                input("\nPress Enter to see next suggestion...")
+                print("\nPress Enter to see next suggestion...", file=sys.stderr)
     except Exception as e:
         print(f"Error: {str(e)}")
         sys.exit(1)
