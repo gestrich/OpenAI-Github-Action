@@ -266,35 +266,9 @@ def main():
         # Analyze the diff
         improvements = analyzer.analyze_diff(diff, annotate_pr=args.annotate_pr)
         
-        # Display results
-        print("\n# Code Improvement Suggestions:")
-        print("=" * 80)
-        
-        for i, improvement in enumerate(improvements, 1):
-            if args.annotate_pr:
-                # Output GitHub-style annotations
-                print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.description}\n{improvement.improvement}")
+        if not improvements:
+            print("No improvements suggested.")
             
-            # Write to stdout for GitHub summary
-            print(f"\n### Suggestion {i}")
-            print(f"**File:** {improvement.file_path}")
-            print(f"**Line:** {improvement.line_number}")
-            
-            # Show the relevant code context
-            if improvement.context_lines:
-                print("\n**Relevant Code:**")
-                print("```")
-                print(Line.format_lines(improvement.context_lines))
-                print("```")
-            
-            print("\n**Issue:**")
-            print(improvement.description)
-            print("\n**Suggested Improvement:**")
-            print(f"```\n{improvement.improvement}\n```")
-            print("---")
-            
-            if i < len(improvements):
-                print("\nPress Enter to see next suggestion...", file=sys.stderr)
     except Exception as e:
         print(f"Error: {str(e)}")
         sys.exit(1)
