@@ -12,12 +12,25 @@ from enum import Enum
 from models import Line, LineType
 
 class CodeImprovement(BaseModel):
-    """Model for code improvement suggestions."""
-    file_path: str = Field(description="The file path where the issue occurs")
-    line_number: int = Field(description="The line number where the issue occurs")
-    description: str = Field(description="Clear description of the issue found")
-    improvement: str = Field(description="Specific suggestion on how to improve the code")
-    context_lines: List[Line] = Field(default_factory=list, description="The surrounding code context as Line objects")
+    """Model for code quality issues and suggested fixes."""
+    file_path: str = Field(
+        description="The file path where the potential issue was found"
+    )
+    line_number: int = Field(
+        description="The line number where the potential issue exists"
+    )
+    potential_bug: str = Field(
+        description="Describe a specific code quality issue, bug risk, or potential problem in the ADDED code. " +
+        "DO NOT describe what the code does or what changed - only describe problems or risks."
+    )
+    suggested_fix: str = Field(
+        description="Provide a specific, actionable suggestion for how to fix the potential issue. " +
+        "DO NOT describe what the code currently does - only describe how to improve it."
+    )
+    context_lines: List[Line] = Field(
+        default_factory=list,
+        description="The surrounding code context as Line objects"
+    )
 
 def general_code_analysis_tips() -> str:
     """Return general tips and context for code analysis."""
@@ -59,30 +72,35 @@ class DiffAnalyzer:
         self.analysis_prompt = f"""
 {general_code_analysis_tips()}
 
-Below is a structured representation of code changes. Each line has:
-- content: The actual code
-- line_number: The line number in the file
-- type: One of "added", "removed", or "context"
+You are a code reviewer looking for potential issues in new code changes.
+Your task is to ONLY analyze the ADDED lines (type: "added") for potential problems.
 
-Your task is to ANALYZE the ADDED lines (type: "added") for potential issues.
-Do NOT describe the changes themselves - instead look for:
+DO NOT:
+- Describe what the code does
+- Explain the changes made
+- Summarize the commit
+- Comment on removed code
+- Describe the implementation
 
-1. Code quality issues in the new code
-2. Potential bugs or edge cases
-3. Performance concerns
-4. Security vulnerabilities
-5. Best practice violations
-6. Maintainability issues
+INSTEAD, look for these specific issues in ADDED lines:
+1. Potential bugs or edge cases that could cause failures
+2. Security vulnerabilities or risks
+3. Performance problems or inefficiencies
+4. Code quality issues or anti-patterns
+5. Maintainability concerns
+6. Best practice violations
 
-For each issue found:
-1. Identify the specific line number where the issue occurs
-2. Clearly describe what the potential problem is
-3. Provide a specific, actionable suggestion for improvement
-4. Consider the language-specific context provided above
+For each issue found, you must:
+1. potential_bug: Describe a specific problem or risk (NOT what the code does)
+2. suggested_fix: Provide specific code changes to fix the issue (NOT what changed)
 
-Example good response:
-- Issue: "The new code doesn't handle null input values, which could cause a crash"
-- NOT: "The code was changed to handle line numbers differently"
+Example GOOD response:
+- potential_bug: "The function doesn't validate the input parameter, risking null pointer exceptions"
+- suggested_fix: "Add input validation: if (param == null) throw new IllegalArgumentException()"
+
+Example BAD response:
+- potential_bug: "The code was updated to handle line numbers"
+- suggested_fix: "The changes look good and improve the output format"
 
 Lines to analyze:
 {{lines}}
@@ -163,16 +181,16 @@ Lines to analyze:
                 for i, improvement in enumerate(all_improvements, 1):
                     if annotate_pr:
                         # Output GitHub-style annotations
-                        print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.description}\n{improvement.improvement}")
+                        print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.potential_bug}\n{improvement.suggested_fix}")
                     
                     # Write to stdout for GitHub summary
                     print(f"### Suggestion {i}")
                     print(f"**File:** {improvement.file_path}")
                     print(f"**Line:** {improvement.line_number}\n")
-                    print("**Issue:**")
-                    print(f"{improvement.description}\n")
-                    print(f"**Suggested Improvement:**")
-                    print(f"{improvement.improvement}\n")
+                    print("**Potential Bug:**")
+                    print(f"{improvement.potential_bug}\n")
+                    print("**Suggested Fix:**")
+                    print(f"```\n{improvement.suggested_fix}\n```")
 
                     # Show the relevant code context
                     if improvement.context_lines:
