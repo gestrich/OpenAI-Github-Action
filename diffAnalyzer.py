@@ -198,7 +198,7 @@ def main():
             
             # Write to stdout for GitHub summary
             print(f"\n### Suggestion {i}")
-            print(f"**File:** {improvement.file_path}")
+            print(f"\n**File:** {improvement.file_path}\n")
             print(f"**Line:** {improvement.line_number}")
             print(f"Issue: {improvement.description}")
             print(f"Suggested Improvement: {improvement.improvement}")
