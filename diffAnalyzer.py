@@ -211,10 +211,10 @@ def main():
         
         # Write to GitHub step summary
         for i, improvement in enumerate(improvements, 1):
-            # Output for GitHub Actions annotations
-            print(f"::notice file={improvement.file_path},line={improvement.line_number}::{improvement.description}")
+            # Output GitHub-style annotations
+            print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.description}\n{improvement.improvement}")
             
-            # Output for summary
+            # Also write to summary
             print(f"\n### Suggestion {i}:", file=sys.stderr)
             print(f"**File:** {improvement.file_path}", file=sys.stderr)
             print(f"**Line:** {improvement.line_number}", file=sys.stderr)

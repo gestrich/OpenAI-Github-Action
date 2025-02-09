@@ -3,7 +3,7 @@ name: Run Script
 on:
   pull_request:
     branches:
-      - main  # or whatever your default branch is
+      - main
   push:
     branches:
       - test
@@ -14,6 +14,7 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      checks: write
       
     steps:
     - name: Checkout repository
@@ -37,17 +38,17 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         if [ "${{ github.event_name }}" = "pull_request" ]; then
-          python diffAnalyzer.py ${{ github.event.pull_request.head.sha }} >> $GITHUB_STEP_SUMMARY
+          python diffAnalyzer.py ${{ github.event.pull_request.head.sha }} | tee output.txt
         else
-          python diffAnalyzer.py HEAD >> $GITHUB_STEP_SUMMARY
+          python diffAnalyzer.py HEAD | tee output.txt
         fi
         
-    - name: Process feedback
+    - name: Process annotations
       if: always()
       run: |
-        if [ -f "code_review_annotations.txt" ]; then
-          while IFS= read -r line; do
+        while IFS= read -r line; do
+          if [[ $line == "::notice"* ]] || [[ $line == "::warning"* ]]; then
             echo "$line"
-          done < "code_review_annotations.txt"
-        fi
+          fi
+        done < output.txt >> $GITHUB_STEP_SUMMARY
         
