@@ -92,8 +92,13 @@ Lines to analyze:
         """Get the git diff for analysis."""
         return get_git_diff(commit_id)
 
-    def analyze_diff(self, diff: GitDiff) -> List[CodeImprovement]:
-        """Analyze the entire diff for improvements."""
+    def analyze_diff(self, diff: GitDiff, annotate_pr: bool = False) -> List[CodeImprovement]:
+        """Analyze the entire diff for improvements.
+        
+        Args:
+            diff: The GitDiff to analyze
+            annotate_pr: Whether to output GitHub-style PR annotations
+        """
         try:
             all_improvements = []
             
@@ -142,7 +147,7 @@ Lines to analyze:
                 print("=" * 80)
                 
                 for i, improvement in enumerate(all_improvements, 1):
-                    if args.annotate_pr:
+                    if annotate_pr:
                         # Output GitHub-style annotations
                         print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.description}\n{improvement.improvement}")
                     
@@ -245,7 +250,7 @@ def main():
             return
         
         # Analyze the diff
-        improvements = analyzer.analyze_diff(diff)
+        improvements = analyzer.analyze_diff(diff, annotate_pr=args.annotate_pr)
         
         # Display results
         print("\n# Code Improvement Suggestions:")
