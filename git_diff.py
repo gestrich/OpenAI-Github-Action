@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 import subprocess
+import re
 from typing import List, Optional
 from models import Line, LineType
 
@@ -40,7 +41,10 @@ def get_git_diff(commit_id: Optional[str] = None) -> Optional[GitDiff]:
         files = []
         current_file = None
         current_lines = []
-        line_number = 1
+        line_number = 1  # Will be updated by @@ headers
+        
+        # Regular expression to parse @@ headers
+        hunk_header_pattern = re.compile(r'^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@')
         
         for line in diff_output.split('\n'):
             if line.startswith('diff --git'):
@@ -51,15 +55,20 @@ def get_git_diff(commit_id: Optional[str] = None) -> Optional[GitDiff]:
                     ))
                 current_lines = []
                 current_file = None
-                line_number = 1
             elif line.startswith('+++ b/'):
                 current_file = line[6:]
+            elif line.startswith('@@'):
+                # Parse the hunk header to get the starting line number
+                match = hunk_header_pattern.match(line)
+                if match:
+                    line_number = int(match.group(1))
             elif current_file and not line.startswith('+++') and not line.startswith('---'):
-                # Create Line object and track line numbers
-                diff_line = Line.from_diff_line(line, line_number)
-                current_lines.append(diff_line)
-                if diff_line.type != LineType.REMOVED:  # Don't increment line number for removed lines
-                    line_number += 1
+                if not line.startswith('@@'):  # Skip @@ lines
+                    # Create Line object and track line numbers
+                    diff_line = Line.from_diff_line(line, line_number)
+                    current_lines.append(diff_line)
+                    if diff_line.type != LineType.REMOVED:  # Don't increment line number for removed lines
+                        line_number += 1
         
         # Add the last file
         if current_file and current_lines:
