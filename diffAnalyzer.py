@@ -209,15 +209,20 @@ def main():
         print("\nCode Improvement Suggestions:")
         print("=" * 80)
         
+        # Write to GitHub step summary
         for i, improvement in enumerate(improvements, 1):
-            print(f"\nSuggestion {i}:")
-            print(f"File: {improvement.file_path}")
-            print(f"Line: {improvement.line_number}")
-            print("\nIssue:")
-            print(improvement.description)
-            print("\nSuggested Improvement:")
-            print(improvement.improvement)
-            print("=" * 80)
+            # Output for GitHub Actions annotations
+            print(f"::notice file={improvement.file_path},line={improvement.line_number}::{improvement.description}")
+            
+            # Output for summary
+            print(f"\n### Suggestion {i}:", file=sys.stderr)
+            print(f"**File:** {improvement.file_path}", file=sys.stderr)
+            print(f"**Line:** {improvement.line_number}", file=sys.stderr)
+            print("\n**Issue:**", file=sys.stderr)
+            print(improvement.description, file=sys.stderr)
+            print("\n**Suggested Improvement:**", file=sys.stderr)
+            print(improvement.improvement, file=sys.stderr)
+            print("---", file=sys.stderr)
             
             if i < len(improvements):
                 input("\nPress Enter to see next suggestion...")
