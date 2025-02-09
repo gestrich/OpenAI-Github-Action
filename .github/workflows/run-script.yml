@@ -3,7 +3,7 @@ name: Run Script
 on:
   push:
     branches:
-      - main  # or master, depending on your default branch name
+      - test  # or master, depending on your default branch name
       
 jobs:
   run-script:
