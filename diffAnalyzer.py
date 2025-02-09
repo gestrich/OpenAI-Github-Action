@@ -93,12 +93,7 @@ Lines to analyze:
         return get_git_diff(commit_id)
 
     def analyze_diff(self, diff: GitDiff, annotate_pr: bool = False) -> List[CodeImprovement]:
-        """Analyze the entire diff for improvements.
-        
-        Args:
-            diff: The GitDiff to analyze
-            annotate_pr: Whether to output GitHub-style PR annotations
-        """
+        """Analyze the entire diff for improvements."""
         try:
             all_improvements = []
             
@@ -107,9 +102,28 @@ Lines to analyze:
                 # Convert lines to dict for API consumption
                 lines_dict = [line.to_dict() for line in file.lines]
                 
+                # Debug: Print payload size information
+                payload = self.analysis_prompt.format(lines=json.dumps(lines_dict, indent=2))
+                payload_size = len(payload.encode('utf-8'))
+                print(f"\nDebug - Payload Information for {file.new_file}:")
+                print(f"Number of lines: {len(file.lines)}")
+                print(f"Payload size: {payload_size / 1024:.2f}KB")
+                if payload_size > 100000:  # Warning if over 100KB
+                    print(f"WARNING: Large payload size might exceed context limits!")
+                
+                # Create a new LLM instance for each file to ensure clean context
+                file_llm = ChatOpenAI(
+                    temperature=0,
+                    model_name=self.llm.model_name,
+                    openai_api_key=self.llm.openai_api_key
+                ).with_structured_output(
+                    CodeImprovement,
+                    method="function_calling"
+                )
+                
                 # Get improvements from OpenAI for this file
-                improvements = self.structured_llm.invoke(
-                    self.analysis_prompt.format(lines=json.dumps(lines_dict, indent=2))
+                improvements = file_llm.invoke(
+                    payload
                 )
                 
                 # Handle single or multiple improvements
