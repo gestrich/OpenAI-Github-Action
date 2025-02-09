@@ -166,10 +166,10 @@ Lines to analyze:
                         print(f"::notice file={improvement.file_path},line={improvement.line_number},title=Code Improvement Suggestion::{improvement.description}\n{improvement.improvement}")
                     
                     # Write to stdout for GitHub summary
-                    print(f"\n### Suggestion {i}")
+                    print(f"### Suggestion {i}")
                     print(f"**File:** {improvement.file_path}")
                     print(f"**Line:** {improvement.line_number}")
-                    print("\n**Issue:**")
+                    print("\n**Issue:**\n")
                     print(improvement.description)
                     print("\n**Suggested Improvement:**")
                     print(f"\n{improvement.improvement}\n")
