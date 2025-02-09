@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - main
-  push:
-    branches:
-      - test
 
 jobs:
   run-script:
@@ -42,6 +39,7 @@ jobs:
         else
           python diffAnalyzer.py HEAD | tee output.txt
         fi
+        cat output.txt >> $GITHUB_STEP_SUMMARY
         
     - name: Process annotations
       if: always()
@@ -50,5 +48,5 @@ jobs:
           if [[ $line == "::notice"* ]] || [[ $line == "::warning"* ]]; then
             echo "$line"
           fi
-        done < output.txt >> $GITHUB_STEP_SUMMARY
+        done < output.txt
         
