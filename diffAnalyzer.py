@@ -172,6 +172,11 @@ class ConfigurationManager:
 
 def main():
     """Entry point for the script."""
+    parser = argparse.ArgumentParser(description='Analyze git diffs for code improvements')
+    parser.add_argument('commit_id', nargs='?', default='HEAD', help='Commit ID to analyze')
+    parser.add_argument('--annotate-pr', action='store_true', help='Output GitHub-style PR annotations')
+    args = parser.parse_args()
+    
     try:
         # Get OpenAI API key from environment or config
         api_key = os.getenv("OPENAI_API_KEY")
@@ -194,13 +199,10 @@ def main():
             model_name=model_name
         )
         
-        # Get commit ID from command line or use default
-        commit_id = sys.argv[1] if len(sys.argv) > 1 else "HEAD"
-        
         # Get the diff
-        diff = analyzer.get_git_diff(commit_id)
+        diff = analyzer.get_git_diff(args.commit_id)
         if not diff:
-            print(f"No changes found in commit: {commit_id}")
+            print(f"No changes found in commit: {args.commit_id}")
             return
         
         # Analyze the diff
