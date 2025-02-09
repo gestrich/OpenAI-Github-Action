@@ -117,43 +117,44 @@ Lines to analyze:
             
             # Analyze each file separately
             for file in diff.files:
-                # Only include lines around changes to reduce context size
-                filtered_lines = []
-                window_size = 5  # Number of context lines to keep around changes
+                # Find all added lines and their surrounding context
+                added_line_indices = [
+                    i for i, line in enumerate(file.lines)
+                    if line.type == LineType.ADDED
+                ]
                 
-                for i, line in enumerate(file.lines):
-                    if line.type in [LineType.ADDED, LineType.REMOVED]:
-                        # Include context lines before
-                        start = max(0, i - window_size)
-                        filtered_lines.extend(file.lines[start:i])
-                        # Include the change
-                        filtered_lines.append(line)
-                        # Include context lines after
-                        end = min(len(file.lines), i + window_size + 1)
-                        filtered_lines.extend(file.lines[i+1:end])
+                if not added_line_indices:
+                    continue  # Skip files with no added lines
+                
+                # Collect context around each added line
+                context_lines = []
+                for idx in added_line_indices:
+                    start = max(0, idx - 5)  # 5 lines before
+                    end = min(len(file.lines), idx + 6)  # 5 lines after
+                    context_lines.extend(file.lines[start:end])
                 
                 # Remove duplicates while preserving order
                 seen = set()
-                filtered_lines = [x for x in filtered_lines if not (x in seen or seen.add(x))]
+                context_lines = [x for x in context_lines if not (x in seen or seen.add(x))]
                 
                 # Convert filtered lines to dict for API consumption
-                lines_dict = [line.to_dict() for line in filtered_lines]
+                lines_dict = [line.to_dict() for line in context_lines]
                 
-                # Debug: Print payload size information
+                # Create the complete payload
                 payload = self.analysis_prompt.format(lines=json.dumps(lines_dict, indent=2))
+                
+                # Debug: Print detailed payload information
+                print("\n" + "="*80)
+                print(f"DEBUG - OpenAI Payload for {file.new_file}")
+                print("="*80)
+                print(f"Total lines in file: {len(file.lines)}")
+                print(f"Lines being analyzed: {len(context_lines)}")
                 payload_size = len(payload.encode('utf-8'))
-                token_estimate = payload_size / 4  # Rough estimate: 4 bytes per token
-                
-                print(f"\nDebug - Payload Information for {file.new_file}:")
-                print(f"Original number of lines: {len(file.lines)}")
-                print(f"Filtered number of lines: {len(filtered_lines)}")
                 print(f"Payload size: {payload_size / 1024:.2f}KB")
-                print(f"Estimated tokens: {token_estimate:.0f}")
-                
-                if token_estimate > 6000:  # Conservative limit for GPT-4
-                    print("WARNING: Large payload - splitting into chunks")
-                    # TODO: Implement chunking if needed
-                    continue
+                print("\nFULL PAYLOAD BEING SENT TO OPENAI:")
+                print("-"*80)
+                print(payload)
+                print("-"*80)
                 
                 # Create a new LLM instance for each file to ensure clean context
                 file_llm = ChatOpenAI(
