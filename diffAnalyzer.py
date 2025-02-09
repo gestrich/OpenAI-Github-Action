@@ -202,8 +202,7 @@ def main():
             print(f"**Line:** {improvement.line_number}")
             print("\n**Issue:**")
             print(improvement.description)
-            print("\n**Suggested Improvement:**")
-            print(f"`{improvement.improvement}`")
+            print(f"**Suggested Improvement:** {improvement.improvement}")
             print("---")
             
             if i < len(improvements):
