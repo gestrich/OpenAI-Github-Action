@@ -104,15 +104,28 @@ Code diff to analyze:
                     
                     # Extract context from the diff content
                     lines = file.content.split('\n')
-                    line_num = improvement.line_number
                     
-                    # Get 3 lines before and after the target line
-                    start = max(0, line_num - 3)
-                    end = min(len(lines), line_num + 3)
+                    # Find the actual line in the diff that corresponds to the reported line
+                    line_count = 0
+                    target_line = None
+                    for i, line in enumerate(lines):
+                        if line.startswith('+') or line.startswith('-') or not line.startswith('@'):
+                            line_count += 1
+                        if line_count == improvement.line_number:
+                            target_line = i
+                            break
                     
-                    # Extract the context lines
-                    context_lines = lines[start:end]
-                    improvement.context = '\n'.join(context_lines)
+                    if target_line is not None:
+                        # Get 10 lines before and after the target line
+                        start = max(0, target_line - 10)
+                        end = min(len(lines), target_line + 10)
+                        
+                        # Extract the context lines
+                        context_lines = lines[start:end]
+                        improvement.context = '\n'.join(context_lines)
+                    else:
+                        print(f"Warning: Could not find line {improvement.line_number} in the diff")
+                        improvement.context = "Context not available"
                 
                 all_improvements.extend(improvements)
             
