@@ -55,14 +55,18 @@ jobs:
         OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        python diffAnalyzer.py ${{ fromJSON(steps.pr.outputs.result).head_sha }}
+        python diffAnalyzer.py ${{ fromJSON(steps.pr.outputs.result).head_sha }} > output.txt
         
     - name: Process annotations
       if: always()
       run: |
-        while IFS= read -r line; do
-          if [[ $line == "::notice"* ]] || [[ $line == "::warning"* ]]; then
-            echo "$line"
-          fi
-        done < output.txt
+        if [ -f output.txt ]; then
+          while IFS= read -r line; do
+            if [[ $line == "::notice"* ]] || [[ $line == "::warning"* ]]; then
+              echo "$line"
+            fi
+          done < output.txt
+        else
+          echo "No output.txt file was created"
+        fi
         
