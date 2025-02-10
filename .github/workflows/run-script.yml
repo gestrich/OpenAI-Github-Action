@@ -3,7 +3,6 @@ name: Run Script
 on:
   issue_comment:
     types: [created, edited]
-
 jobs:
   run-script:
     if: |
