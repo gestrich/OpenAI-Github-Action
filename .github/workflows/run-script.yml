@@ -4,6 +4,11 @@ on:
   issue_comment:
     types: [created, edited]
   workflow_dispatch:
+    inputs:
+      pull_request:
+        description: 'Pull request number'
+        required: true
+        type: string
   pull_request_review_comment:
     types: [created, edited]
 
