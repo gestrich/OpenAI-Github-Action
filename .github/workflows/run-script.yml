@@ -3,7 +3,19 @@ name: Run Script
 on:
   issue_comment:
     types: [created, edited]
+  workflow_dispatch:
+  pull_request_review_comment:
+    types: [created, edited]
+
 jobs:
+  process_comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract PR Comment Data
+        env:
+          EVENT: ${{ toJson(github.event) }}
+        run: |
+          echo "Event: $EVENT"
   run-script:
     if: |
       github.event_name == 'issue_comment' && 
